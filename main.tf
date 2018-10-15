@@ -89,11 +89,7 @@ resource "aws_launch_configuration" "example" {
   instance_type          = "t3.nano"
   security_groups        = ["${aws_security_group.de.id}"]
   key_name               = "oni-key-3"
-  user_data = <<-EOF
-              #!/bin/bash
-              echo "Hello, World" > index.html
-              nohup busybox httpd -f -p 8080 &
-              EOF
+  user_data = "${file("install.sh")}"
   lifecycle {
     create_before_destroy = true
   }
