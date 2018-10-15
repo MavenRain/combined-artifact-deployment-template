@@ -84,6 +84,20 @@ data "aws_ami" "ubuntu-1604" {
   owners = ["099720109477"] # Canonical
 }
 
+resource "aws_s3_bucket" "mojave" {
+  bucket = "oni-build-deploy"
+  acl    = "public-read"
+}
+
+resource "aws_s3_bucket_object" "object" {
+  acl = "public-read"
+  bucket = "${aws_s3_bucket.mojave.bucket}"
+  key = "artifact"
+  source = "./hello-server"
+  etag = "${md5(file("./hello-server"))}"
+  content_type = "application/octet-stream"
+}
+
 resource "aws_launch_configuration" "example" {
   image_id               = "${data.aws_ami.ubuntu-1604.id}"
   instance_type          = "t3.nano"
@@ -93,6 +107,7 @@ resource "aws_launch_configuration" "example" {
   lifecycle {
     create_before_destroy = true
   }
+  depends_on = ["aws_s3_bucket_object.object"]
 }
 
 resource "aws_autoscaling_group" "example" {
@@ -143,6 +158,7 @@ resource "aws_elb" "example" {
     instance_port = "8080"
     instance_protocol = "http"
   }
+  depends_on = ["aws_s3_bucket_object.object"]
 }
 
 output "elb_dns_name" {
