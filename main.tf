@@ -3,7 +3,11 @@ provider "aws" {
 }
 
 locals {
-  availability-zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+  availability-zones = ["us-west-2a", "us-west-2b", "us-west-2c"],
+  artifact-bucket = "oni-build-deploy"
+  artifact-key = "artifact"
+  artifact-acl = "public-read"
+  app-name = "hello-server"
 }
 
 data "aws_availability_zones" "all" {}
@@ -85,17 +89,25 @@ data "aws_ami" "ubuntu-1604" {
 }
 
 resource "aws_s3_bucket" "mojave" {
-  bucket = "oni-build-deploy"
-  acl    = "public-read"
+  bucket = "${local.artifact-bucket}"
+  acl    = "${local.artifact-acl}"
 }
 
 resource "aws_s3_bucket_object" "object" {
-  acl = "public-read"
+  acl = "${local.artifact-acl}"
   bucket = "${aws_s3_bucket.mojave.bucket}"
-  key = "artifact"
-  source = "./hello-server"
-  etag = "${md5(file("./hello-server"))}"
+  key = "${local.artifact-key}"
+  source = "./${local.app-name}"
+  etag = "${md5(file("./${local.app-name}"))}"
   content_type = "application/octet-stream"
+}
+
+data "template_file" "user_data" {
+  template = "${file("install.sh")}"
+  vars {
+    bucket = "${local.artifact-bucket}"
+    key = "${local.artifact-key}"
+  }
 }
 
 resource "aws_launch_configuration" "example" {
@@ -103,7 +115,7 @@ resource "aws_launch_configuration" "example" {
   instance_type          = "t3.nano"
   security_groups        = ["${aws_security_group.de.id}"]
   key_name               = "oni-key-3"
-  user_data = "${file("install.sh")}"
+  user_data = "${data.template_file.user_data.rendered}"
   lifecycle {
     create_before_destroy = true
   }
