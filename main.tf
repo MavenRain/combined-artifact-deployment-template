@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 locals {
-  availability-zones = ["us-west-2a", "us-west-2b", "us-west-2c"],
+  availability-zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
   artifact-bucket = "oni-build-deploy"
   artifact-key = "artifact"
   artifact-acl = "public-read"
